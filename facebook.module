@@ -118,11 +118,15 @@ function facebook_settings_form() {
               '#disabled' => TRUE,
           ),
       ),
-      'facebook_page' => array(
-          '#type' => 'textfield',
-          '#title' => t('Facebook page'),
-          '#default_value' => variable_get('facebook_page', ''),
-          '#description' => t('If you want to associate your website with an existing Facebook Page, instead of your website\'s URL, enter the page id here.'),
+      'page' => array(
+          '#type' => 'fieldset',
+          '#title' => t('Page'),
+          'facebook_page' => array(
+              '#type' => 'textfield',
+              '#title' => t('Page URL'),
+              '#default_value' => variable_get('facebook_page', ''),
+              '#description' => t('If you want to associate your website with an existing Facebook Page, instead of your website\'s URL, enter the page URL here.'),
+          ),
       ),
   ));
 }

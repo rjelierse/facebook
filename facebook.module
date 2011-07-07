@@ -143,6 +143,9 @@ function facebook_block($op = 'list', $delta = 0, $data = array()) {
           'events' => array(
               'info' => t('Upcoming events (facebook)'),
           ),
+          'like' => array(
+              'info' => t('Like (facebook)'),
+          ),
       );
     case 'view':
       return call_user_func("facebook_block_{$delta}_view");

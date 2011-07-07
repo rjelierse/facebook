@@ -1,0 +1,9 @@
+; $Id$
+
+name = Facebook
+description = Implementation of Facebook API through the JavaScript SDK
+version = 6.x-dev
+core = 6.x
+package = Third-party Integration
+
+dependencies[] = fancybox

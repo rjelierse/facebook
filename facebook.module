@@ -1,0 +1,150 @@
+<?php
+// $Id$
+
+/**
+ * @file facebook.module
+ * Add support to Drupal for the Facebook API by using the JavaScript SDK
+ *
+ * @author Raymond Jelierse
+ *
+ * @todo Add 'like' button to specific node types, with configurable URL.
+ * @todo Add 'like' button for main website.
+ */
+
+/**
+ * Implements hook_menu()
+ */
+function facebook_menu() {
+  return array(
+      'admin/settings/facebook' => array(
+          'title' => 'Facebook',
+          'description' => t('Manage Facebook API settings'),
+          'page callback' => 'drupal_get_form',
+          'page arguments' => array('facebook_settings_form'),
+          'access arguments' => array('administer facebook'),
+      ),
+  );
+}
+
+/**
+ * Implements hook_perm()
+ */
+function facebook_perm() {
+  return array('administer facebook');
+}
+
+/**
+ * Implements hook_init()
+ */
+function facebook_init() {
+  $app_id = variable_get('facebook_app_id', NULL);
+  $app_secret = variable_get('facebook_app_secret', NULL);
+  $access_token = variable_get('facebook_app_access_token', NULL);
+
+  if ($access_token === NULL && ($app_id !== NULL && $app_secret !== NULL)) {
+    $request = sprintf('https://graph.facebook.com/oauth/access_token?client_id=%s&client_secret=%s&grant_type=client_credentials', $app_id, $app_secret);
+    $c = curl_init($request);
+    curl_setopt($c, CURLOPT_RETURNTRANSFER, TRUE);
+    curl_setopt($c, CURLOPT_SSL_VERIFYPEER, FALSE);
+    $result = curl_exec($c);
+    curl_close($c);
+    if ($result !== FALSE) {
+      parse_str($result);
+      variable_set('facebook_app_access_token', $access_token);
+      drupal_set_message(t('Updated Facebook Application Access Token'));
+    }
+    else {
+      drupal_set_message(t('Failed to update Facebook Application Access Token'), 'error');
+    }
+  }
+
+  // Add support for the Facebook JavaScipt SDK
+  drupal_set_html_head('<script src="http://connect.facebook.net/en_US/all.js"></script>');
+
+  // Drupal.settings object data
+  $settings = array(
+      'appId' => $app_id,
+      'accessToken' => $access_token,
+  );
+
+  drupal_add_js(array('facebook' => $settings), 'setting');
+  drupal_add_js(drupal_get_path('module', 'facebook') . '/js/facebook.js');
+}
+
+/**
+ * Implements hook_footer()
+ *
+ * Add the JavaScript SDK placeholder here.
+ */
+function facebook_footer() {
+  return '<div id="fb-root"></div>';
+}
+
+/**
+ * Implements of hook_namespaces()
+ */
+function facebook_namespaces() {
+  return array(
+    'fb' => 'http://www.facebook.com/2008/fbml',
+  );
+}
+
+/**
+ * Facebook API settings form.
+ */
+function facebook_settings_form() {
+  return system_settings_form(array(
+      'application' => array(
+          '#type' => 'fieldset',
+          '#title' => t('Application'),
+          'facebook_app_id' => array(
+              '#type' => 'textfield',
+              '#title' => t('Application id'),
+              '#default_value' => variable_get('facebook_app_id', ''),
+              '#required' => TRUE,
+              '#description' => t('To use the Facebook API, you will need to have an application id.'),
+          ),
+          'facebook_app_secret' => array(
+              '#type' => 'textfield',
+              '#title' => t('Application secret'),
+              '#default_value' => variable_get('facebook_app_secret', ''),
+              '#description' => t('To receive access tokens for various actions, an application secret is required. No entering one will limit the functionality of this module.'),
+          ),
+          'facebook_app_access_token' => array(
+              '#type' => 'textfield',
+              '#title' => t('Access token'),
+              '#value' => variable_get('facebook_app_access_token', ''),
+              '#description' => t('This is the access token that has been granted based on the above application id and secret.'),
+              '#disabled' => TRUE,
+          ),
+      ),
+      'facebook_page' => array(
+          '#type' => 'textfield',
+          '#title' => t('Facebook page'),
+          '#default_value' => variable_get('facebook_page', ''),
+          '#description' => t('If you want to associate your website with an existing Facebook Page, instead of your website\'s URL, enter the page id here.'),
+      ),
+  ));
+}
+
+/**
+ * Implements hook_block()
+ */
+function facebook_block($op = 'list', $delta = 0, $data = array()) {
+  include_once drupal_get_path('module', 'facebook') . '/facebook.blocks.inc';
+
+  switch ($op) {
+    case 'list':
+      return array(
+          'events' => array(
+              'info' => t('Upcoming events (facebook)'),
+          ),
+      );
+    case 'view':
+      return call_user_func("facebook_block_{$delta}_view");
+    case 'configure':
+      return call_user_func("facebook_block_{$delta}_form");
+    case 'save':
+      return call_user_func("facebook_block_{$delta}_form_submit", $data);
+  }
+}

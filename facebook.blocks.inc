@@ -122,20 +122,10 @@ function facebook_block_like_view() {
       break;
   }
 
-  // Generate XFBML
-  $like_button = '<' . $tag;
-  foreach ($attributes as $name => $value) {
-    if (empty($value)) {
-      continue;
-    }
-    $like_button .= sprintf(' %s="%s"', $name, check_plain($value));
-  }
-  $like_button .= '></' . $tag . '>';
-
   // Return block content
   return array(
       'subject' => t('Like this website'),
-      'content' => $like_button,
+      'content' => theme('like_button', $type, $attributes),
   );
 }
 

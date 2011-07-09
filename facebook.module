@@ -1,4 +1,5 @@
 <?php
+
 // $Id$
 
 /**
@@ -6,9 +7,6 @@
  * Add support to Drupal for the Facebook API by using the JavaScript SDK
  *
  * @author Raymond Jelierse
- *
- * @todo Add 'like' button to specific node types, with configurable URL.
- * @todo Add 'like' button for main website.
  */
 
 /**
@@ -16,13 +14,13 @@
  */
 function facebook_menu() {
   return array(
-      'admin/settings/facebook' => array(
-          'title' => 'Facebook',
-          'description' => t('Manage Facebook API settings'),
-          'page callback' => 'drupal_get_form',
-          'page arguments' => array('facebook_settings_form'),
-          'access arguments' => array('administer facebook'),
-      ),
+    'admin/settings/facebook' => array(
+      'title' => 'Facebook',
+      'description' => t('Manage Facebook API settings'),
+      'page callback' => 'drupal_get_form',
+      'page arguments' => array('facebook_settings_form'),
+      'access arguments' => array('administer facebook'),
+    ),
   );
 }
 
@@ -52,8 +50,7 @@ function facebook_init() {
       parse_str($result);
       variable_set('facebook_app_access_token', $access_token);
       drupal_set_message(t('Updated Facebook Application Access Token'));
-    }
-    else {
+    } else {
       drupal_set_message(t('Failed to update Facebook Application Access Token'), 'error');
     }
   }
@@ -63,8 +60,8 @@ function facebook_init() {
 
   // Drupal.settings object data
   $settings = array(
-      'appId' => $app_id,
-      'accessToken' => $access_token,
+    'appId' => $app_id,
+    'accessToken' => $access_token,
   );
 
   drupal_add_js(array('facebook' => $settings), 'setting');
@@ -94,40 +91,40 @@ function facebook_namespaces() {
  */
 function facebook_settings_form() {
   return system_settings_form(array(
-      'application' => array(
-          '#type' => 'fieldset',
-          '#title' => t('Application'),
-          'facebook_app_id' => array(
-              '#type' => 'textfield',
-              '#title' => t('Application id'),
-              '#default_value' => variable_get('facebook_app_id', ''),
-              '#required' => TRUE,
-              '#description' => t('To use the Facebook API, you will need to have an application id.'),
-          ),
-          'facebook_app_secret' => array(
-              '#type' => 'textfield',
-              '#title' => t('Application secret'),
-              '#default_value' => variable_get('facebook_app_secret', ''),
-              '#description' => t('To receive access tokens for various actions, an application secret is required. No entering one will limit the functionality of this module.'),
-          ),
-          'facebook_app_access_token' => array(
-              '#type' => 'textfield',
-              '#title' => t('Access token'),
-              '#value' => variable_get('facebook_app_access_token', ''),
-              '#description' => t('This is the access token that has been granted based on the above application id and secret.'),
-              '#disabled' => TRUE,
-          ),
+    'application' => array(
+      '#type' => 'fieldset',
+      '#title' => t('Application'),
+      'facebook_app_id' => array(
+        '#type' => 'textfield',
+        '#title' => t('Application id'),
+        '#default_value' => variable_get('facebook_app_id', ''),
+        '#required' => TRUE,
+        '#description' => t('To use the Facebook API, you will need to have an application id.'),
       ),
-      'page' => array(
-          '#type' => 'fieldset',
-          '#title' => t('Page'),
-          'facebook_page' => array(
-              '#type' => 'textfield',
-              '#title' => t('Page URL'),
-              '#default_value' => variable_get('facebook_page', ''),
-              '#description' => t('If you want to associate your website with an existing Facebook Page, instead of your website\'s URL, enter the page URL here.'),
-          ),
+      'facebook_app_secret' => array(
+        '#type' => 'textfield',
+        '#title' => t('Application secret'),
+        '#default_value' => variable_get('facebook_app_secret', ''),
+        '#description' => t('To receive access tokens for various actions, an application secret is required. No entering one will limit the functionality of this module.'),
       ),
+      'facebook_app_access_token' => array(
+        '#type' => 'textfield',
+        '#title' => t('Access token'),
+        '#value' => variable_get('facebook_app_access_token', ''),
+        '#description' => t('This is the access token that has been granted based on the above application id and secret.'),
+        '#disabled' => TRUE,
+      ),
+    ),
+    'page' => array(
+      '#type' => 'fieldset',
+      '#title' => t('Page'),
+      'facebook_page' => array(
+        '#type' => 'textfield',
+        '#title' => t('Page URL'),
+        '#default_value' => variable_get('facebook_page', ''),
+        '#description' => t('If you want to associate your website with an existing Facebook Page, instead of your website\'s URL, enter the page URL here.'),
+      ),
+    ),
   ));
 }
 
@@ -140,12 +137,12 @@ function facebook_block($op = 'list', $delta = 0, $data = array()) {
   switch ($op) {
     case 'list':
       return array(
-          'events' => array(
-              'info' => t('Upcoming events (facebook)'),
-          ),
-          'like' => array(
-              'info' => t('Like (facebook)'),
-          ),
+        'events' => array(
+          'info' => t('Upcoming events (facebook)'),
+        ),
+        'like' => array(
+          'info' => t('Like (facebook)'),
+        ),
       );
     case 'view':
       return call_user_func("facebook_block_{$delta}_view");
@@ -154,4 +151,119 @@ function facebook_block($op = 'list', $delta = 0, $data = array()) {
     case 'save':
       return call_user_func("facebook_block_{$delta}_form_submit", $data);
   }
+}
+
+/**
+ * Implements hook_nodeapi()
+ */
+function facebook_nodeapi(&$node, $operation, $data1 = NULL, $data2 = NULL) {
+  switch ($operation) {
+    case 'insert':
+      $data = array();
+      if (!empty($node->facebook_like_page)) {
+        $result = db_query("INSERT INTO {node_facebook_page} VALUES (%d, '%s', %d, '%s')", $node->nid, $node->facebook_like_page, $node->facebook_like_enabled, serialize($data));
+      }
+      else {
+        $result = db_query("INSERT INTO {node_facebook_page} VALUES (%d, NULL, %d, '%s')", $node->nid, $node->facebook_like_enabled, serialize($data));
+      }
+
+      if ($result === FALSE) {
+        drupal_set_message('Failed to insert Facebook settings for node');
+      }
+      break;
+    case 'update':
+      $data = array();
+      if (!empty($node->facebook_like_page)) {
+        $result = db_query("UPDATE {node_facebook_page} SET page = '%s', status = %d, data = '%s' WHERE nid = %d", $node->facebook_like_page, $node->facebook_like_enabled, serialize($data), $node->nid);
+      }
+      else {
+        $result = db_query("UPDATE {node_facebook_page} SET page = NULL, status = %d, data = '%s' WHERE nid = %d", $node->facebook_like_enabled, serialize($data), $node->nid);
+      }
+
+      if ($result === FALSE) {
+        drupal_set_message('Failed to update Facebook settings for node');
+      }
+      break;
+    case 'delete':
+      db_query('DELETE FROM {node_facebook_page} WHERE nid = %d', $node->nid);
+      break;
+    case 'load':
+      $result = db_query("SELECT page, status, data FROM {node_facebook_page} WHERE nid = %d", $node->nid);
+      if (($result = db_fetch_array($result)) !== FALSE) {
+        $data = array();
+        $data += (array) unserialize($result['data']);
+        $data['status'] = $result['status'] ? TRUE : FALSE;
+        $data['href'] = (!empty($result['page'])) ? $result['page'] : '';
+        $node->facebook_like = $data;
+      }
+      else {
+        $node->facebook_like = FALSE;
+      }
+      break;
+    case 'view':
+      if (empty($node->facebook_like) || $node->facebook_like['status']) {
+        $node->content['facebook_like'] = array(
+          '#value' => theme('like_button', 'button', (empty($node->facebook_like)) ? array() : $node->facebook_like),
+          '#weight' => 1,
+        );
+      }
+      break;
+  }
+}
+
+/**
+ * Implements hook_form_alter()
+ */
+function facebook_form_alter(&$form, $form_state, $form_id) {
+  if (isset($form['#id']) && $form['#id'] == 'node-form') {
+    $node = $form['#node'];
+
+    $form['facebook_like'] = array(
+      '#type' => 'fieldset',
+      '#title' => t('Facebook Like'),
+      '#collapsible' => TRUE,
+      'facebook_like_enabled' => array(
+        '#type' => 'checkbox',
+        '#title' => t('Enable Like button'),
+        '#default_value' => ($node->facebook_like === FALSE) ? TRUE : $node->facebook_like['status'],
+      ),
+      'facebook_like_page' => array(
+        '#type' => 'textfield',
+        '#title' => t('Page to like'),
+        '#default_value' => $node->facebook_like['page'],
+        '#description' => t('You can use this to override the URL of the page that should be liked on Facebook. By default, when the Like button is clicked, the current page is liked.'),
+      ),
+    );
+  }
+}
+
+/**
+ * Implements hook_theme()
+ */
+function facebook_theme() {
+  return array(
+    'like_button' => array(
+      'arguments' => array('type' => NULL, 'attributes' => NULL),
+    ),
+  );
+}
+
+/**
+ * Theme the Facebook Like button
+ */
+function theme_like_button($type = 'button', $attributes = array()) {
+  // Generate XFBML
+  $content  = '<';
+  $content .= ($type == 'button') ? 'fb:like' : 'fb:like-box';
+  foreach ($attributes as $name => $value) {
+    if (empty($value)) {
+      continue;
+    }
+    $content .= sprintf(' %s="%s"', $name, check_plain($value));
+  }
+  $content .= '></';
+  $content .= ($type == 'button') ? 'fb:like' : 'fb:like-box';
+  $content .= '>';
+
+  return $content;
 }

@@ -92,7 +92,7 @@ function facebook_block_like_view() {
     $attributes['href'] = $facebook_page;
   }
   // Show faces
-  $attributes['show_faces'] = variable_get('facebook_block_like_show_faces', TRUE) ? 'true' : 'false';
+  $attributes['show_faces'] = variable_get('facebook_block_like_show_faces', TRUE);
   // Color scheme
   $attributes['colorscheme'] = variable_get('facebook_block_like_colorscheme', '');
   // Font
@@ -107,16 +107,16 @@ function facebook_block_like_view() {
       // Like button layout
       $attributes['layout'] = variable_get('facebook_block_like_button_layout', 'standard');
       // Label for Like button
-      $attributes['verb'] = variable_get('facebook_block_like_button_verb', 'like');
+      $attributes['action'] = variable_get('facebook_block_like_button_verb', 'like');
       // Show Share button
-      $attributes['share'] = variable_get('facebook_block_like_button_share', FALSE) ? 'true' : 'false';
+      $attributes['share'] = variable_get('facebook_block_like_button_share', FALSE);
       break;
     case 'box':
       $tag = 'fb:like-box';
       // Show post stream from page
-      $attributes['stream'] = variable_get('facebook_block_like_box_stream', FALSE) ? 'true' : 'false';
+      $attributes['stream'] = variable_get('facebook_block_like_box_stream', FALSE);
       // Show header on box
-      $attributes['header'] = variable_get('facebook_block_like_box_header', FALSE) ? 'true' : 'false';
+      $attributes['header'] = variable_get('facebook_block_like_box_header', FALSE);
       // Box border color
       $attributes['border_color'] = variable_get('facebook_block_like_box_color', '');
       break;

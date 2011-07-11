@@ -56,7 +56,7 @@ function facebook_init() {
   }
 
   // Add support for the Facebook JavaScipt SDK
-  drupal_set_html_head('<script src="http://connect.facebook.net/en_US/all.js"></script>');
+  drupal_set_html_head('<script type="text/javascript" src="http://connect.facebook.net/en_US/all.js"></script>');
 
   // Drupal.settings object data
   $settings = array(
@@ -125,6 +125,66 @@ function facebook_settings_form() {
         '#description' => t('If you want to associate your website with an existing Facebook Page, instead of your website\'s URL, enter the page URL here.'),
       ),
     ),
+    'node' => array(
+      '#type' => 'fieldset',
+      '#title' => t('Like nodes'),
+      'facebook_node_like_show_faces' => array(
+        '#type' => 'checkbox',
+        '#title' => t('Show the faces of the people that like this item.'),
+        '#default_value' => variable_get('facebook_node_like_show_faces', TRUE),
+      ),
+      'facebook_node_like_colorscheme' => array(
+        '#type' => 'select',
+        '#title' => t('Color scheme'),
+        '#options' => array(
+          'light' => t('Light'),
+          'dark' => t('Dark'),
+        ),
+        '#default_value' => variable_get('facebook_node_like_colorscheme', 'light'),
+      ),
+      'facebook_node_like_font' => array(
+        '#type' => 'select',
+        '#title' => t('Font'),
+        '#options' => array(
+          'arial' => 'Arial',
+          'lucida grande' => 'Lucida Grande',
+          'segoe ui' => 'Segoe UI',
+          'tahoma' => 'Tahoma',
+          'trebuchet ms' => 'Trebuchet MS',
+          'verdana' => 'Verdana'
+        ),
+        '#default_value' => variable_get('facebook_node_like_font', 'lucida grande'),
+      ),
+      'facebook_node_like_width' => array(
+        '#type' => 'textfield',
+        '#title' => t('Width'),
+        '#default_value' => variable_get('facebook_node_like_width', ''),
+      ),
+      'facebook_node_like_layout' => array(
+        '#type' => 'select',
+        '#title' => t('Layout'),
+        '#options' => array(
+          'standard' => t('Standard'),
+          'button_count' => t('Button count'),
+          'box_count' => t('Box count'),
+        ),
+        '#default_value' => variable_get('facebook_node_like_layout', 'standard'),
+      ),
+      'facebook_node_like_verb' => array(
+        '#type' => 'select',
+        '#title' => t('Action'),
+        '#options' => array(
+          'like' => t('Like'),
+          'recommend' => t('Recommend'),
+        ),
+        '#default_value' => variable_get('facebook_node_like_verb', 'like'),
+      ),
+      'facebook_node_like_share' => array(
+        '#type' => 'checkbox',
+        '#title' => t('Show an additional Share button.'),
+        '#default_value' => variable_get('facebook_node_like_share', FALSE),
+      ),
+    ),
   ));
 }
 
@@ -162,8 +222,7 @@ function facebook_nodeapi(&$node, $operation, $data1 = NULL, $data2 = NULL) {
       $data = array();
       if (!empty($node->facebook_like_page)) {
         $result = db_query("INSERT INTO {node_facebook_page} VALUES (%d, '%s', %d, '%s')", $node->nid, $node->facebook_like_page, $node->facebook_like_enabled, serialize($data));
-      }
-      else {
+      } else {
         $result = db_query("INSERT INTO {node_facebook_page} VALUES (%d, NULL, %d, '%s')", $node->nid, $node->facebook_like_enabled, serialize($data));
       }
 
@@ -175,8 +234,7 @@ function facebook_nodeapi(&$node, $operation, $data1 = NULL, $data2 = NULL) {
       $data = array();
       if (!empty($node->facebook_like_page)) {
         $result = db_query("UPDATE {node_facebook_page} SET page = '%s', status = %d, data = '%s' WHERE nid = %d", $node->facebook_like_page, $node->facebook_like_enabled, serialize($data), $node->nid);
-      }
-      else {
+      } else {
         $result = db_query("UPDATE {node_facebook_page} SET page = NULL, status = %d, data = '%s' WHERE nid = %d", $node->facebook_like_enabled, serialize($data), $node->nid);
       }
 
@@ -191,14 +249,22 @@ function facebook_nodeapi(&$node, $operation, $data1 = NULL, $data2 = NULL) {
       $result = db_query("SELECT page, status, data FROM {node_facebook_page} WHERE nid = %d", $node->nid);
       if (($result = db_fetch_array($result)) !== FALSE) {
         $data = array();
-        $data += (array) unserialize($result['data']);
         $data['status'] = $result['status'] ? TRUE : FALSE;
         $data['href'] = (!empty($result['page'])) ? $result['page'] : '';
         $node->facebook_like = $data;
+      } else {
+        $node->facebook_like = array(
+          'status' => TRUE,
+          'page' => ''
+        );
       }
-      else {
-        $node->facebook_like = FALSE;
-      }
+      $node->facebook_like['show_faces'] = variable_get('facebook_node_like_show_faces', TRUE);
+      $node->facebook_like['colorscheme'] = variable_get('facebook_node_like_colorscheme', 'light');
+      $node->facebook_like['font'] = variable_get('facebook_node_like_font', 'lucida grande');
+      $node->facebook_like['width'] = variable_get('facebook_node_like_width', '');
+      $node->facebook_like['layout'] = variable_get('facebook_node_like_layout', 'standard');
+      $node->facebook_like['action'] = variable_get('facebook_node_like_verb', 'like');
+      $node->facebook_like['share'] = variable_get('facebook_node_like_share', FALSE);
       break;
     case 'view':
       if (empty($node->facebook_like) || $node->facebook_like['status']) {
@@ -206,6 +272,7 @@ function facebook_nodeapi(&$node, $operation, $data1 = NULL, $data2 = NULL) {
           '#value' => theme('like_button', 'button', (empty($node->facebook_like)) ? array() : $node->facebook_like),
           '#weight' => 1,
         );
+        $node->facebook_like_rendered = drupal_render($node->content['facebook_like']);
       }
       break;
   }
@@ -252,18 +319,44 @@ function facebook_theme() {
  * Theme the Facebook Like button
  */
 function theme_like_button($type = 'button', $attributes = array()) {
+  // Set the accepted attributes for the Like button and Like Box.
+  $accepted_attributes = array(
+    'href',
+    'show_faces',
+    'colorscheme',
+    'font',
+    'width'
+  );
+
+  switch ($type) {
+    case 'button':
+      $accepted_attributes[] = 'layout';
+      $accepted_attributes[] = 'action';
+      $accepted_attributes[] = 'share';
+      $tag = 'fb:like';
+      break;
+    case 'box':
+      $accepted_attributes[] = 'header';
+      $accepted_attributes[] = 'stream';
+      $accepted_attributes[] = 'border_color';
+      $tag = 'fb:like-box';
+      break;
+  }
+
   // Generate XFBML
-  $content  = '<';
-  $content .= ($type == 'button') ? 'fb:like' : 'fb:like-box';
+  $content = "<$tag";
   foreach ($attributes as $name => $value) {
-    if (empty($value)) {
+    if (empty($value) || !in_array($name, $accepted_attributes)) {
       continue;
     }
+
+    if (is_bool($value)) {
+      $value = ($value) ? 'true' : 'false';
+    }
+
     $content .= sprintf(' %s="%s"', $name, check_plain($value));
   }
-  $content .= '></';
-  $content .= ($type == 'button') ? 'fb:like' : 'fb:like-box';
-  $content .= '>';
+  $content .= "></$tag>";
 
   return $content;
 }

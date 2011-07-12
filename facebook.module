@@ -297,7 +297,7 @@ function facebook_form_alter(&$form, $form_state, $form_id) {
       'facebook_like_page' => array(
         '#type' => 'textfield',
         '#title' => t('Page to like'),
-        '#default_value' => $node->facebook_like['page'],
+        '#default_value' => $node->facebook_like['href'],
         '#description' => t('You can use this to override the URL of the page that should be liked on Facebook. By default, when the Like button is clicked, the current page is liked.'),
       ),
     );

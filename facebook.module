@@ -227,7 +227,6 @@ function facebook_nodeapi(&$node, $op, $a3 = null, $a4 = false) {
             ($a3 == false || ($a3 && variable_get('facebook_node_like_display_teaser', false))) &&
             variable_get('facebook_node_like_display', FACEBOOK_LIKE_INLINE) == FACEBOOK_LIKE_INLINE
         ) {
-            dpm('succes');
             $node->content['facebook_like'] = array(
                 '#value' => theme('like_button', 'button', (empty($node->facebook_like)) ? array()
                                                        : $node->facebook_like),

@@ -64,7 +64,8 @@ function facebook_like_settings() {
             '#description' => t('Where should the like button be displayed.'),
             '#options' => array(
                 FACEBOOK_LIKE_INLINE => t('Inside the content of the node'),
-                FACEBOOK_LIKE_LINKS => t('In the link section of the node')
+                FACEBOOK_LIKE_LINKS => t('In the link section of the node'),
+                FACEBOOK_LIKE_TEMPLATE => t('The theme handles the display')
             ),
             '#default_value' => variable_get('facebook_node_like_display', FACEBOOK_LIKE_INLINE),
         ),

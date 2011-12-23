@@ -16,6 +16,11 @@ define('FACEBOOK_LIKE_INLINE', 1);
 define('FACEBOOK_LIKE_LINKS', 2);
 
 /**
+ * Do not display the Facebook Like button, just add the rendered button to the node object for the theme to handle.
+ */
+define('FACEBOOK_LIKE_TEMPLATE', 3);
+
+/**
  * Add menu items for the Facebook module.
  *
  * @return array

@@ -91,7 +91,7 @@ function facebook_init() {
     );
 
     drupal_add_js(array('facebook' => $settings), 'setting');
-    drupal_add_js(drupal_get_path('module', 'facebook') . '/js/facebook.js');
+    drupal_add_js(drupal_get_path('module', 'facebook') . '/facebook.js');
 }
 
 /**
@@ -117,210 +117,6 @@ function facebook_footer() {
 function facebook_namespaces() {
     return array(
         'fb' => 'http://www.facebook.com/2008/fbml',
-    );
-}
-
-/**
- * Block implementations for Facebook.
- *
- * Contains the following blocks:
- *   - Facebook Events: Show a list of upcoming events for a configured Facebook entitiy.
- *   - Facebook Like: Show a Facebook Like widget for a configured Facebook entitity.
- *
- * @param string $op
- *     The operation to perform.
- * @param string $delta
- *     The unique identifier of the block.
- * @param array $data
- *     The submitted form data for the save operation.
- *
- * @return array
- *     The data required by the operation.
- *
- * @seealso hook_block()
- */
-function facebook_block($op = 'list', $delta = '', $data = array()) {
-    include_once drupal_get_path('module', 'facebook') . '/facebook.blocks.inc';
-
-    switch ($op) {
-    case 'list':
-    default:
-        return array(
-            'events' => array(
-                'info' => t('Upcoming events (facebook)'),
-            ),
-            'like' => array(
-                'info' => t('Like (facebook)'),
-            ),
-        );
-    
-    case 'view':
-        return call_user_func("facebook_block_{$delta}_view");
-
-    case 'configure':
-        return call_user_func("facebook_block_{$delta}_form");
-
-    case 'save':
-        return call_user_func("facebook_block_{$delta}_form_submit", $data);
-    }
-}
-
-/**
- * Adds the Facebook Like button to nodes.
- *
- * @param object $node
- *     The node object that is being processed.
- *     When operation is insert or update, this contains the submitted form data.
- * @param string $op
- *     The current operation for node processing.
- * @param mixed $a3
- *     When viewing a node: whether the node viewed is being viewed as a teaser.
- *     When validating a node: the form that was used to edit the node.
- * @param bool $a4
- *     When viewing a node: whether the node viewed is being viewed is the main item on the page.
- *
- * @seealso hook_nodeapi()
- */
-function facebook_nodeapi(&$node, $op, $a3 = null, $a4 = false) {
-    switch ($op) {
-    case 'insert':
-    case 'update':
-        $facebook = array(
-            'nid' => $node->nid,
-            'page' => empty($node->facebook_like_page) ? NULL : $node->facebook_like_page,
-            'status' => $node->facebook_like_enabled,
-            'data' => NULL
-        );
-        $key = null;
-        if (db_result(db_query('SELECT nid FROM {node_facebook_page} WHERE nid = %d', $node->nid))) {
-            $key = 'nid';
-        }
-
-        if (drupal_write_record('node_facebook_page', $facebook, $key) === FALSE) {
-            drupal_set_message('Failed to save Facebook settings for node');
-        }
-        break;
-
-    case 'delete':
-        db_query('DELETE FROM {node_facebook_page} WHERE nid = %d', $node->nid);
-        break;
-
-    case 'load':
-        $result = db_query("SELECT page, status FROM {node_facebook_page} WHERE nid = %d", $node->nid);
-        if (($result = db_fetch_array($result)) !== FALSE) {
-            $node->facebook_like = array(
-                'status' => (bool) $result['status'],
-                'href' => (!empty($result['page'])) ? $result['page'] : ''
-            );
-        } else {
-            $node->facebook_like = array(
-                'status' => true,
-                'href' => ''
-            );
-        }
-        $node->facebook_like['show_faces'] = (bool) variable_get('facebook_node_like_show_faces', false);
-        $node->facebook_like['colorscheme'] = variable_get('facebook_node_like_colorscheme', 'light');
-        $node->facebook_like['font'] = variable_get('facebook_node_like_font', 'lucida grande');
-        $node->facebook_like['width'] = variable_get('facebook_node_like_width', '');
-        $node->facebook_like['layout'] = variable_get('facebook_node_like_layout', 'standard');
-        $node->facebook_like['action'] = variable_get('facebook_node_like_verb', 'like');
-        $node->facebook_like['send'] = (bool) variable_get('facebook_node_like_share', false);
-        break;
-
-    case 'view':
-        if ($node->facebook_like['status'] &&
-            ($a3 == false || ($a3 && variable_get('facebook_node_like_display_teaser', false))) &&
-            variable_get('facebook_node_like_display', FACEBOOK_LIKE_INLINE) == FACEBOOK_LIKE_INLINE
-        ) {
-            $node->content['facebook_like'] = array(
-                '#value' => theme('like_button', 'button', (empty($node->facebook_like)) ? array()
-                                                       : $node->facebook_like),
-                '#weight' => 1,
-            );
-        }
-        break;
-    }
-}
-
-/**
- * Alter the node edit form to add Facebook Like button settings.
- *
- * @param array $form
- *     The form.
- * @param array $form_state
- *     The form state.
- * @param $form_id
- *     The form ID.
- *
- * @seealso hook_form_alter()
- */
-function facebook_form_alter(&$form, $form_state, $form_id) {
-    if (isset($form['#id']) && $form['#id'] == 'node-form') {
-        $node = $form['#node'];
-
-        $form['facebook_like'] = array(
-            '#type' => 'fieldset',
-            '#title' => t('Facebook Like'),
-            '#collapsible' => TRUE,
-            'facebook_like_enabled' => array(
-                '#type' => 'checkbox',
-                '#title' => t('Enable Like button'),
-                '#default_value' => $node->facebook_like['status'],
-            ),
-            'facebook_like_page' => array(
-                '#type' => 'textfield',
-                '#title' => t('Page to like'),
-                '#default_value' => $node->facebook_like['href'],
-                '#description' => t('You can use this to override the URL of the page that should be liked on Facebook. By default, when the Like button is clicked, the current page is liked.'),
-            ),
-        );
-    }
-}
-
-/**
- * Add the Facebook Like button to the node links, when configured to do so.
- *
- * @param string $type
- *     The type of $object, can be node or comment.
- * @param object $object
- *     The object that contains the data.
- * @param bool $teaser
- *     Whether the object is being displayed as a teaser.
- *
- * @return array
- *     The links that should be added to the node's link section.
- *
- * @seealso hook_link()
- */
-function facebook_link($type, $object, $teaser = false) {
-    $links = array();
-    if ($type == 'node' &&
-        $object->facebook_like['status'] &&
-        ($teaser == false || ($teaser && variable_get('facebook_node_like_display_teaser', false))) &&
-        variable_get('facebook_node_like_display', FACEBOOK_LIKE_INLINE) == FACEBOOK_LIKE_LINKS
-    ) {
-        $links['facebook_like'] = array(
-            'title' => theme('like_button', 'button', $object->facebook_like),
-            'html' => true
-        );
-    }
-
-    return $links;
-}
-
-/**
- * Define the theme implementations for the Facebook module.
- *
- * @return array
- *     Additional theme implementations.
- *
- * @seealso hook_theme()
- */
-function facebook_theme() {
-    return array(
-        'like_button' => array(
-            'file' => 'facebook.theme.inc'
-        ),
     );
 }
 
@@ -354,4 +150,44 @@ function facebook_get_access_token($app_id) {
     }
 
     return $access_token;
+}
+
+/**
+ * Check a given array of attributes for validity and prepare them for
+ * usage for the Facebook JavaScript SDK.
+ *
+ * @param array $attributes
+ *     The attributes defined.
+ * @param array $allowed_attributes
+ *     The allowed attributes for the element on which they are used.
+ * @param bool $html5
+ *     The attributes should be prepared for inclusion as html5 data.
+ *
+ * @return array
+ *     The cleaned up array of attributes to apply on the element.
+ */
+function facebook_prepare_attributes($attributes, $allowed_attributes, $html5 = false) {
+    foreach ($attributes as $name => $value) {
+        if (empty($value) || !in_array($name, $allowed_attributes)) {
+            unset($attributes[$name]);
+            continue;
+        }
+
+        // Convert boolean values to textual representations.
+        switch($name) {
+        case 'send':
+        case 'show_faces':
+            $attributes[$name] = ($value) ? 'true' : 'false';
+            break;
+        }
+
+        // If HTML5, convert attributes to data attributes.
+        if ($html5) {
+            $data = 'data-' . str_replace('_', '-', $name);
+            $attributes[$data] = $attributes[$name];
+            unset($attributes[$name]);
+        }
+    }
+
+    return $attributes;
 }

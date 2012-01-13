@@ -1,101 +1,18 @@
 <?php
+/**
+ * Facebook - Installation routines.
+ */
 
 /**
- * @file facebook.install
- *   Installation scripts.
+ * Remove all things associated with the module.
  *
- * @author Raymond Jelierse
- */
-
-/**
- * Implements hook_install()
- */
-function facebook_install() {
-    drupal_install_schema('facebook');
-}
-
-/**
- * Implements hook_uninstall()
+ * @seealso hook_uninstall()
  */
 function facebook_uninstall() {
-    // Schema
-    drupal_uninstall_schema('facebook');
     // Facebook application settings
     variable_del('facebook_app_id');
     variable_del('facebook_app_secret');
     variable_del('facebook_app_access_token');
     // Facebook page settings
     variable_del('facebook_page');
-    // Facebook Events block settings
-    variable_del('facebook_block_events_stream');
-    variable_del('facebook_block_events_limit');
-    variable_del('facebook_block_events_offset');
-    // Facebook Like block settings
-    variable_del('facebook_block_like_box_border_color');
-    variable_del('facebook_block_like_box_header');
-    variable_del('facebook_block_like_box_stream');
-    variable_del('facebook_block_like_button_layout');
-    variable_del('facebook_block_like_button_share');
-    variable_del('facebook_block_like_button_verb');
-    variable_del('facebook_block_like_colorscheme');
-    variable_del('facebook_block_like_font');
-    variable_del('facebook_block_like_show_faces');
-    variable_del('facebook_block_like_type');
-    variable_del('facebook_block_like_use_page');
-    variable_del('facebook_block_like_width');
-}
-
-/**
- * Implements hook_schema()
- */
-function facebook_schema() {
-    return array(
-        'node_facebook_page' => array(
-            'description' => 'Storage for Facebook page field',
-            'fields' => array(
-                'nid' => array(
-                    'description' => 'The primary identifier for a node.',
-                    'type' => 'int',
-                    'unsigned' => TRUE,
-                    'not null' => TRUE
-                ),
-                'page' => array(
-                    'description' => 'The URL to the Facebook page',
-                    'type' => 'varchar',
-                    'length' => 255,
-                    'default' => NULL,
-                ),
-                'status' => array(
-                    'description' => 'Show the Like button on this node',
-                    'type' => 'int',
-                    'size' => 'tiny',
-                    'default' => 1,
-                ),
-                'data' => array(
-                    'type' => 'text',
-                    'not null' => FALSE,
-                    'size' => 'big',
-                    'description' => 'A serialized array of name value pairs that contain the settings for the Facebook Like button',
-                ),
-            ),
-            'primary key' => array('nid'),
-        ),
-    );
-}
-
-/**
- * Module revision 1: Introduce schema.
- */
-function facebook_update_6001() {
-    drupal_install_schema('facebook');
-}
-
-/**
- * Module revision 2: Create entries for existing nodes.
- */
-function facebook_update_6002() {
-    $result = db_query('SELECT nid FROM {node}');
-    while (($nid = db_result($result)) > 0) {
-        db_query('INSERT INTO {node_facebook_page} VALUES (%d, NULL, 1, NULL)', $nid);
-    }
 }

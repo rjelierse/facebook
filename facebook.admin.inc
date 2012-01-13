@@ -1,5 +1,9 @@
 <?php
 /**
+ * Facebook - Administration functions.
+ */
+
+/**
  * Facebook API settings for the entire website.
  *
  * This contains the settings to associate the website with an application or page on Facebook.
@@ -44,94 +48,5 @@ function facebook_settings() {
             ),
         ),
     );
-    return system_settings_form($form);
-}
-
-/**
- * Facebook API settings for the Like button on nodes.
- *
- * Contains settings for the method to include the Like button and options to
- * modify the entire layout of the Like button using the SDK.
- *
- * @return array
- *     The settings form.
- */
-function facebook_like_settings() {
-    $form = array(
-        'facebook_node_like_display' => array(
-            '#type' => 'select',
-            '#title' => t('Diplay'),
-            '#description' => t('Where should the like button be displayed.'),
-            '#options' => array(
-                FACEBOOK_LIKE_INLINE => t('Inside the content of the node'),
-                FACEBOOK_LIKE_LINKS => t('In the link section of the node'),
-                FACEBOOK_LIKE_TEMPLATE => t('The theme handles the display')
-            ),
-            '#default_value' => variable_get('facebook_node_like_display', FACEBOOK_LIKE_INLINE),
-        ),
-        'facebook_node_like_dislay_teaser' => array(
-            '#type' => 'checkbox',
-            '#title' => t('Also show on node teasers.'),
-            '#default_value' => variable_get('facebook_node_like_display_teaser', false)
-        ),
-        'layout' => array(
-            '#type' => 'fieldset',
-            '#title' => t('Layout'),
-            '#collapsible' => true,
-            '#collapsed' => true,
-            'facebook_node_like_colorscheme' => array(
-                '#type' => 'select',
-                '#title' => t('Color scheme'),
-                '#options' => array(
-                    'light' => t('Light'),
-                    'dark' => t('Dark'),
-                ),
-                '#default_value' => variable_get('facebook_node_like_colorscheme', 'light'),
-            ),
-            'facebook_node_like_font' => array(
-                '#type' => 'select',
-                '#title' => t('Font'),
-                '#options' => array(
-                    'arial' => 'Arial',
-                    'lucida grande' => 'Lucida Grande',
-                    'segoe ui' => 'Segoe UI',
-                    'tahoma' => 'Tahoma',
-                    'trebuchet ms' => 'Trebuchet MS',
-                    'verdana' => 'Verdana'
-                ),
-                '#default_value' => variable_get('facebook_node_like_font', 'lucida grande'),
-            ),
-            'facebook_node_like_width' => array(
-                '#type' => 'textfield',
-                '#title' => t('Width'),
-                '#default_value' => variable_get('facebook_node_like_width', ''),
-            ),
-            'facebook_node_like_layout' => array(
-                '#type' => 'select',
-                '#title' => t('Layout'),
-                '#options' => array(
-                    'standard' => t('Standard'),
-                    'button_count' => t('Button count'),
-                    'box_count' => t('Box count'),
-                ),
-                '#default_value' => variable_get('facebook_node_like_layout', 'standard'),
-            ),
-            'facebook_node_like_verb' => array(
-                '#type' => 'select',
-                '#title' => t('Action'),
-                '#options' => array(
-                    'like' => t('Like'),
-                    'recommend' => t('Recommend'),
-                ),
-                '#default_value' => variable_get('facebook_node_like_verb', 'like'),
-            ),
-            'facebook_node_like_share' => array(
-                '#type' => 'checkbox',
-                '#title' => t('Show an additional Share button.'),
-                '#default_value' => variable_get('facebook_node_like_share', FALSE),
-            ),
-        )
-    );
-
     return system_settings_form($form);
 }
